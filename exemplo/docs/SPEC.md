@@ -84,7 +84,7 @@ Todas as tabelas têm `id` (ulid ou bigint autoincrement — escolha uma e mante
 - `user_id`, `type` enum: `income`, `expense`, `transfer`, `credit_card_expense`, `credit_card_payment`, `adjustment`
 - `account_id` (nullable — nulo quando `credit_card_expense`), `credit_card_id` (nullable — preenchido só em `credit_card_expense`), `invoice_id` (nullable)
 - `transfer_account_id` (destino; obrigatório em `transfer`) — **modelagem de transferência**: uma única linha `transfer` com `account_id` (origem) e `transfer_account_id` (destino). Saldo da origem subtrai, do destino soma. Não criar duas linhas espelhadas (evita dessincronização). Relatórios de despesa/receita IGNORAM transferências.
-- `amount_cents` (sempre positivo; o sinal vem do `type`), `currency`
+- `amount_cents` (positivo para todos os tipos, exceto `credit_card_expense` que admite negativo = estorno/crédito do emissor na fatura; o sinal vem do `type` para os demais), `currency`
 - `date` (data do lançamento/caixa), `competence_date` (data de competência, default = `date`) — permite lançar em setembro despesa que "pertence" a agosto
 - `description`, `notes`, `payee_id` (nullable), `category_id` (nullable — obrigatório para income/expense/credit_card_expense, exceto se houver splits)
 - `status` enum: `pending` (agendado/não efetivado — não afeta saldo atual, afeta saldo previsto), `cleared` (efetivado), `reconciled` (conciliado com extrato — bloqueado para edição de valor/data sem "desconciliar")
@@ -130,9 +130,11 @@ Todas as tabelas têm `id` (ulid ou bigint autoincrement — escolha uma e mante
 - Disparo: ao criar/importar transação (automático) + botão "aplicar regras" retroativo com preview (dry-run listando o que mudaria) antes de confirmar.
 
 ### 2.15 `import_batches` + `import_rows`
-- Batch: `user_id`, `source` (`csv`, `ofx`), `target_account_id`/`target_credit_card_id`, `file_path`, `mapping` json, `status`, `rows_total`, `rows_imported`, `rows_skipped`, `rows_duplicated`
+- Batch: `user_id`, `source` (`csv`, `ofx`), `target_account_id`/`target_credit_card_id`, `target_reference_month` (`AAAA-MM` opcional para cartão), `file_path`, `mapping` json, `status`, `rows_total`, `rows_imported`, `rows_skipped`, `rows_duplicated`
 - Row: dados brutos, `parsed` json, `status` (`pending`, `imported`, `duplicate`, `ignored`, `error`), `transaction_id`
-- Fluxo de staging: upload → detectar delimitador/encoding (UTF-8 e Latin-1) → mapear colunas (salvar mapping por banco para reuso) → preview com dedupe (hash de data+valor+descrição normalizada → `external_id`) → aplicar regras → confirmar.
+- Fluxo de staging: upload → detectar delimitador/encoding (UTF-8 e Latin-1) → mapear colunas (salvar mapping por banco para reuso; presets Nubank, Itaú, Inter, XP) → preview com dedupe (hash de data+valor+descrição normalizada → `external_id`) → aplicar regras → confirmar.
+- Suporte a parcelas: campo canônico opcional `installment` (`n de N` ou `n/N`) gera sufixo ` (n/N)` na descrição (refletido no hash dedupe) e preenche `installment_number`/`installment_total` da transação.
+- Pagamento de fatura em cartão: linha com valor negativo e descrição de pagamento vira `ignored` com motivo explicativo, nunca vira compra.
 
 ### 2.16 `notifications` (Laravel padrão) + `user_settings`
 - `user_settings`: `user_id`, `currency`, `locale`, `timezone`, `first_day_of_month` (para quem fecha o mês no dia do salário, ex.: dia 5), `budget_basis` (`date` | `competence`), `dashboard_widgets` json (ordem/visibilidade), `notify_bills_days_before` (default 3), `notify_invoice_closing_days_before` (default 2), `notify_budget_threshold` bool, `theme` (`light`, `dark`, `system`)
@@ -162,6 +164,7 @@ Todas as tabelas têm `id` (ulid ou bigint autoincrement — escolha uma e mante
 13. **Exclusão de conta/cartão** com transações → bloqueada; oferecer arquivar. Excluir categoria com transações → obrigar realocar para outra categoria.
 14. **Datas e timezone**: tudo em `America/Sao_Paulo`; `date` é DATE puro (sem hora) para evitar bug de fuso.
 15. **Dinheiro**: nunca float. Input aceita "1.234,56" e "1234.56"; armazena centavos; exibe `R$ 1.234,56`.
+16. **Estorno no cartão**: `credit_card_expense` com `amount_cents` negativo representa estorno/crédito do emissor na fatura; reduz `total_cents` da fatura e o limite usado (`total_cents − paid_cents`), reduz o gasto da categoria nos relatórios e no orçamento, tem efeito zero no saldo de conta, não aceita `splits` e na importação de fatura linha com valor negativo vira estorno.
 
 ---
 
@@ -225,7 +228,7 @@ Widgets reordenáveis (config do usuário):
 13. Tendência por categoria (média móvel 3 meses)
 
 ### 4.10 Importação / Exportação
-- Wizard CSV/OFX (2.15). Exportação completa em CSV por entidade e backup do arquivo SQLite (download `.sqlite` + JSON de todas as entidades do usuário). Restauração de backup JSON.
+- Wizard CSV/OFX (2.15): seleção de fatura-alvo para cartão (faturas existentes ou próximos meses calculados, desabilitando pagas), mapeamento de colunas incluindo parcela opcional e prévia com motivo de linhas ignoradas. Exportação completa em CSV por entidade e backup do arquivo SQLite (download `.sqlite` + JSON de todas as entidades do usuário). Restauração de backup JSON.
 
 ### 4.11 Regras
 - CRUD com builder de condições/ações; testar regra contra transações existentes (preview) e aplicar retroativamente

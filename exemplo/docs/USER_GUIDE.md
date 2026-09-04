@@ -63,6 +63,7 @@ poucos toques).
 - Fatura fechada não recebe lançamentos novos (compra atrasada vai para a
   próxima, com aviso); dá para forçar "nesta fatura" quando precisar, e
   reabrir uma fatura paga.
+- **Estorno/crédito na fatura**: para registrar um reembolso do emissor, lance uma compra no cartão com valor negativo (ex.: `-271,42` ou `R$ -271,42`). Ele reduz o total da fatura e o gasto da categoria nos relatórios, aparece na fatura com `+ R$ 271,42` em verde e rótulo “Estorno no cartão”, e não afeta o saldo da conta. Importar fatura com linha negativa também cria o estorno automaticamente.
 
 ## Parcelamentos
 
@@ -119,10 +120,24 @@ poucos toques).
 ## Importação CSV/OFX + regras
 
 - **Importar** (`/app/import`): wizard em 4 passos — upload (CSV de bancos BR
-  ou OFX) → mapeamento de colunas (o app detecta delimitador e encoding, e
-  salva o mapeamento por banco para reuso) → preview com duplicadas marcadas
-  → confirmar. Reimportar o mesmo arquivo não duplica (dedupe por
-  data+valor+descrição).
+  como Nubank, Itaú, Inter e XP, ou OFX) → mapeamento de colunas (o app detecta
+  delimitador e encoding, e salva o mapeamento por banco para reuso) → preview com
+  duplicadas marcadas → confirmar. Reimportar o mesmo arquivo não duplica
+  (dedupe por data+valor+descrição normalizada).
+- **Fatura de cartão de crédito**: ao importar para um cartão, você pode escolher a
+  **Fatura de destino** (etapa 1). Por padrão, a opção é *Automática* (aloca cada
+  compra na fatura correspondente à sua data); ao escolher uma fatura específica
+  (ex.: `2026-06`), **todas** as compras do arquivo caem nela, mesmo que tenham
+  datas antigas. Faturas já pagas aparecem desabilitadas e marcadas como `(paga)`.
+- **Parcelas**: arquivos com coluna de parcela (como `4 de 5` ou `4/5`, reconhecida
+  automaticamente no preset XP ou mapeada na etapa 2) têm o sufixo ` (n/N)` anexado
+  à descrição — garantindo que parcelas de mesmo valor tenham hashes distintos — e
+  preenchem `installment_number` e `installment_total` no lançamento criado.
+- **Linhas de pagamento de fatura**: em extratos de cartão, linhas com valor negativo
+  e descrições de pagamento (ex.: "Pagamento recebido", "Pagamento de fatura",
+  "Débito automático") são identificadas e marcadas como **Ignoradas** com motivo
+  explicativo na prévia, nunca virando compra no cartão. O pagamento da fatura
+  deve ser registrado pela tela do cartão ou lançamento manual.
 - **Regras** (`/app/rules`): automação tipo "se descrição contém iFood, define
   categoria Delivery e adiciona etiqueta delivery". Builder de condições e
   ações com prioridade; roda sozinha ao criar/importar, e dá para **testar

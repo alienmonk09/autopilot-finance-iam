@@ -88,3 +88,13 @@ Formato inspirado em [Keep a Changelog](https://keepachangelog.com/), simplifica
 - Flag `is_fixed` em categorias para o relatório de despesas fixas × variáveis (granularidade por split).
 - Onboarding: wizard inicial (primeira conta → primeiro cartão → importar/lançar) + `DemoSeeder` idempotente com 12 meses de dados realistas (`db:seed --class=DemoSeeder`, login demo).
 - Docs finais: README, ARCHITECTURE e guia do usuário (`docs/USER_GUIDE.md`); Lighthouse mobile ≥ 90 nas telas principais (dashboard, transações, fatura do cartão, relatórios) com budgets acompanhados (task 9.F1).
+
+## [Pós-roadmap] — Correções
+
+- Estorno/crédito em fatura de cartão (#1): `credit_card_expense` passa a admitir `amount_cents` negativo, reduzindo `total_cents` da fatura e o limite usado, reduzindo o gasto da categoria nos relatórios e orçamentos, com efeito zero no saldo de conta, sem `splits`; importação de fatura com linha negativa vira estorno (`refund` no preview); UI mostra `+ R$` em verde e rótulo “Estorno no cartão”; API v1 aceita `amount_cents` negativo só para `credit_card_expense`.
+- **Importação de fatura de cartão (#2)**:
+  - Fatura-alvo explícita para lote de cartão (`target_reference_month` em `import_batches`), permitindo direcionar todas as linhas importadas para a fatura escolhida independente da data da compra.
+  - Reconhecimento de coluna de parcelas (`installment` com formatos `n de N` e `n/N`) adicionando o sufixo ` (n/N)` na descrição (refletido no hash de deduplicação) e preenchendo `installment_number` e `installment_total` nas transações criadas.
+  - Preset nativo da XP (`Data;Estabelecimento;Portador;Valor;Parcela`) reconhecendo colunas e parcelamento automaticamente.
+  - Linhas de pagamento de fatura em importação de cartão (valores negativos com descrição de pagamento) passam a ser marcadas como `ignored` com motivo explicativo, evitando compras negativas espúrias.
+  - Seleção de fatura de destino no wizard (etapa 1) com listagem das faturas existentes e próximos 3 meses calculados (desabilitando faturas já pagas), suporte a coluna de parcela na etapa 2 e exibição de parcelas e motivos de linhas ignoradas na prévia (etapa 3).
