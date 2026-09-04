@@ -1,0 +1,15 @@
+# Container único: FrankenPHP serve em :8000; queue (database) e scheduler
+# rodam no mesmo container via supervisord. O SQLite vive em
+# ./database/database.sqlite e os uploads/cache em ./storage (bind mounts,
+# então os dados sobrevivem a rebuilds). Variáveis vêm do .env do host.
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./database:/app/database
+      - ./storage:/app/storage
+    restart: unless-stopped

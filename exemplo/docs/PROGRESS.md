@@ -1,0 +1,176 @@
+# Aprendizados entre iterações (append-only; uma linha por fato; as últimas 40 entram em cada /next)
+- [0.1] Laravel 13 SQLiteConnector aplica foreign_key_constraints/busy_timeout/journal_mode via chaves do config (null = nao aplica), inclusive :memory:
+- [0.1] PRAGMA busy_timeout se le via SELECT PRAGMA busy_timeout cuja coluna se chama timeout, nao busy_timeout
+- [0.1] composer create-project laravel/laravel gera .env + database.sqlite migrado via hooks; rsync os traz junto e php artisan about funciona de imediato
+- [0.2] Pest 5 exige PHPUnit ^13, conflita com phpunit ^12 do skeleton; resolver com composer require pestphp/pest --dev --with-all-dependencies
+- [0.2] PHPStan 2.x + Larastan 3 estoura memory_limit=128M do PHP CLI; usar --memory-limit=1G no comando
+- [0.2] filament/filament ^5 ja traz livewire/livewire ^4 como dependencia; require explicito so fixa versao
+- [0.3] Fortify 1.x tem anti-replay de TOTP: confirmar 2FA e desafiar login no mesmo window de 30s com o mesmo codigo falha; teste de challenge deve usar codigo ainda nao consumido
+- [0.3] Rotas de gestao 2FA do Fortify exigem sessao auth.password_confirmed_at recente; em testes usar withSession(['auth.password_confirmed_at' => time()])
+- [0.3] TOTP valido em testes via app(Google2FA::class)->getCurrentOtp(decrypt(secret)); User precisa do trait TwoFactorAuthenticatable para qr/recovery/hasEnabled
+- [0.4] NumberFormatter pt_BR emite R$ com NBSP e negativo como -R$; normalizar espacos para saida deterministica R$ 1.234,56
+- [0.4] Pest 5 roda tests/Unit sem vinculo ao TestCase Laravel; VO puro nao precisa de app
+- [0.4] intdiv trunca em direcao a zero; allocate com resto na primeira parcela soma exata inclusive para negativos
+- [0.5] Gate do Laravel 13 resolve #[UsePolicy] no model nativamente, sem AuthServiceProvider nem Gate::policy manual
+- [0.5] Larastan acusa trait.unused se trait sem uso em path analisado; fixture em tests/Support analisado resolve sem model de producao
+- [0.5] Pest 5 rejeita objetos instanciados em ->with(); usar class-strings e instanciar dentro do teste
+- [0.6] Filament 5 sem ->font() usa Inter Variable autohospedada via LocalFontProvider (zero CDN); ->font('X') sem provider cai no Bunny CDN
+- [0.6] ->viteTheme() exige manifest do Vite e da 500 sem npm run build; ->theme(asset(...)) com CSS vanilla funciona sem build
+- [0.6] Template canonico do PanelProvider esta em PanelProviderClassGenerator no vendor; paginas usam protected string $view de instancia e icones via enum Heroicon
+- [0.7] FrankenPHP serve Laravel em /app com php_server try_files path index.php; schedule:work e o programa ideal do supervisord para scheduler em container
+- [0.7] .dockerignore que esvazia storage/framework/* quebra package:discover no build; criar dirs com mkdir -p antes do composer install
+- [0.8] shivammathur/setup-php@v2 tem cache Composer embutido via cache: composer, dispensa actions/cache separado
+- [0.9] Supervisord roda queue:work database + schedule:work no mesmo container; sem cron externo
+- [1.1] Factory com user_id => User::factory() vence preenchimento via auth; em testes de isolamento usar estado forUser($user) explicito
+- [1.1] Transliterator Any-Latin/Latin-ASCII (intl) normaliza acentos PT para dedupe de payee, com fallback iconv
+- [1.1] foreignId()->constrained() cria so FK sem indice automatico; indices explicitos necessarios
+- [1.2] updateOrCreate com valor null na chave traduz para whereNull — serve para linhas globais/sistema
+- [1.2] Remover WithoutModelEvents do DatabaseSeeder faz o seed do usuario passar pelo UserObserver (settings + clone)
+- [1.2] Collection Eloquent tem whereNull/whereNotNull — util para separar topos de subs ja carregados
+- [1.3] Eloquent date cast exige conexao ate no setAttribute/getAttribute; em Unit puro ler/escrever initial_balance_date cru via getAttributes()/setRawAttributes
+- [1.3] Carbon 3 createFromFormat nunca retorna false (lanca InvalidFormatException); overflow como 2026-02-30 so se pega com round-trip format('Y-m-d')
+- [1.3] Larastan nivel 6 acusa instanceof em iterable<BalanceEntry> como sempre-true; phpdoc honesto e iterable<mixed> com guarda lancando AccountException
+- [1.4] Filament 5 avalia closures de rules() pelo proprio DI; validacao custom precisa ser objeto ValidationRule, nao closure
+- [1.4] Livewire::test fora de HTTP nao tem painel atual; usar Filament::setCurrentPanel('app') no beforeEach
+- [1.4] Actions Edit/Delete do Filament 5 exigem ->authorize() explicito, senao ignoram a policy
+- [1.5] Filament 5 resolve registro da acao aplicando filtros ativos; registro arquivado exige removeTableFilters() antes de callTableAction('unarchive')
+- [1.5] Filament 5 DeleteAction::before() + Notification danger + halt() exibe bloqueio amigavel sem sobrescrever fluxo de delete
+- [1.5] Guards de exclusao forward-compatible via Schema::hasTable/hasColumn cobrem transactions e tabelas futuras sem quebrar na fase 1
+- [2.1] activitylog v5 usa trait Models Concerns LogsActivity + LogOptions, dontLogEmptyChanges e diffs em activity->attribute_changes
+- [2.1] medialibrary v11.23 suporta Laravel 13 + PHP 8.4; Storage::fake public basta para addMedia sem fila quando sem conversoes
+- [2.1] PRAGMA index_list/index_info valida colunas e ordem de indices compostos no SQLite onde Schema::hasIndex nao basta
+- [2.2] Larastan exige @param array<string,mixed> em bloco doc multi-linha; docblock de linha unica nao e reconhecido
+- [2.2] Transaction::tags()->sync() funciona em pivot morfologico sem expor taggable_type; array_unique nos ids evita duplicadas (taggables sem unique)
+- [2.2] Teste de sinais opostos da transferencia (3.9) reaproveita AccountBalanceService::at() com BalanceEntry montado da linha
+- [2.3a] Filament 5 Tabs com livewireProperty grava aba ativa em prop publica da pagina via $set, sem hook de sincronia
+- [2.3a] Filament 5 FileUpload persiste no disco em beforeStateDehydrated; addMediaFromDisk funciona dentro de handleRecordCreation
+- [2.3a] Filament 5 Select valida in contra options(); excluir origem das opcoes ja barra transferencia mesma-conta na UI
+- [2.3b] Filament 5 contentFooter exige View com filtros ja aplicados; closure retornando view() soma filtro inteiro sem N+1
+- [2.3b] Filament 5 Group::make('date') sem ->date() preserva titulo custom d/m/Y via getTitleFromRecordUsing
+- [2.3b] ListRecords::table() recebe tabela ja configurada pelo Resource; modifyQueryUsing da pagina compoe com filtros
+- [2.3c] Filament 5 usa toolbarActions() (bulkActions deprecated); BulkAction injeta records/data/action com authorizeIndividualRecords por policy
+- [2.3c] Teste de bulk com form usa callTableBulkAction(nome, [records], [campo => valor]) + assertHasNoTableBulkActionErrors()
+- [2.3c] syncWithoutDetaching() anexa tag sem remover existentes nem duplicar em pivot morfico
+- [2.4] Filament 5: campo reativo usa ->live() (reactive() e alias); afterStateUpdated injeta Set/Get e $set() nao dispara hook do outro campo
+- [2.4] Filament 5 em testes: ->set('data.campo', id) dispara afterStateUpdated; ->assertFormSet confere estado do form
+- [2.5] Filament 5 ViewRecord com global scope retorna 404 (nao 403) para registro de outro usuario antes da policy
+- [2.5] Filament 5 ViewEntry::make()->view() expoe a pagina Livewire como $this na Blade, dispensando viewData para dados dinamicos
+- [2.5] CarbonImmutable::create() 4o arg e hora, nao timezone — usar createFromDate(y,m,d,tz); end() em prop readonly exige copiar para variavel
+- [2.6] Filament 5 Page actions com form testam via callAction(nome, data) + assertHasNoActionErrors
+- [2.6] CreateTransaction aceita status enum direto; DB::transaction aninhado vira savepoint
+- [2.7] Filament 5 acao global = Livewire InteractsWithActions + renderHook TOPBAR_END; FAB dispara com wire:click mountAction
+- [2.7] Filament 5 testes: apos sucesso action desmonta e assertHasNoActionErrors quebra; assertar DB + assertNotified
+- [2.7] Reuso de form do Resource em Action via formComponents(): array; Tabs com livewireProperty le prop publica do host
+- [3.1] SQLiteGrammar trata foreign em Schema::table via rebuild preservando dados e indices
+- [3.1] fake()->unique() vaza entre testes no mesmo processo; contador estatico garante unique composto sem flakiness
+- [3.1] Pint class_attributes_separation exige linha em branco entre use Trait e primeiro membro
+- [3.2a] CarbonImmutable::createFromDate(y,m,d,'America/Sao_Paulo')->startOfDay() entrega DATE puro com timezone sem cair no 4o-arg-hora de ::create()
+- [3.2a] Clamp de dia em mes curto = min(dia, daysInMonth); somar mes a partir do dia 01 com addMonthsNoOverflow(1) nunca estoura
+- [3.2a] Pest Unit puro (sem RefreshDatabase) basta para Domain puro; new CreditCard([...]) + getAttribute() evita conexao em testes
+- [3.2b] Services de dominio com BelongsToUser precisam de withoutGlobalScopes() + escopo por user_id explicito para funcionar em jobs/seeds sem auth
+- [3.2b] InvoiceService: comparar status via getAttribute('status') !== Enum preserva Larastan sem narrowing manual
+- [3.2c] PayInvoice: linhas sinteticas (saldo anterior/credito) usam resolveForPurchase para pular fatura nao-open (SPEC 3.6)
+- [3.2c] Excedente de pagamento como paid_cents na proxima fatura (amount_cents sempre positivo impede linha negativa)
+- [3.3] Laravel 13 nao descobre app/Console/Commands sozinho: precisa de ->withCommands() em bootstrap/app.php
+- [3.3] withSchedule() registra via Artisan::starting; teste de scheduler precisa rodar um artisan antes de inspecionar Schedule events
+- [3.4] Filament 5 tabela usa 1a coluna por atributo; colunas calculadas precisam de nome proprio + getStateUsing()
+- [3.4] Transaction::withoutGlobalScopes() derruba SoftDeletingScope: somas de dominio precisam de whereNull(deleted_at)
+- [3.5] Filament 5: TextColumn com estado nulo exibe placeholder sem chamar formatStateUsing; coluna virtual com getStateUsing sempre avalia
+- [3.5] Vinculacao de fatura no dominio (Create/UpdateTransaction via InvoiceService) cobre form, modal e API de uma vez; CardException vira TransactionException na fronteira
+- [4.1] SQLite valida FK on-delete via PRAGMA foreign_key_list, nao via Schema::hasIndex — mesmo helper PRAGMA serve para indices e FKs
+- [4.1] Funcoes helper em arquivos Pest sao globais: cada arquivo de teste precisa de nomes proprios
+- [4.2a] Larastan estreita tipos apos throw em ramos XOR: no else de card !== null usar -> direto, nao ?->
+- [4.2a] InvoiceService resolveForPurchase+recalculateTotals aninhados em DB::transaction externo funcionam via savepoint
+- [4.2b] Funcoes helper no topo de arquivo Pest nao tem $this: montagem compartilhada vai no beforeEach ($this->grupo)
+- [4.2b] Collection::whereIn devolve as mesmas instancias Eloquent: somar a colecao-mae apos setAttribute+save ja reflete valores novos
+- [4.2b] Larastan function.alreadyNarrowedType em validacao runtime de array: phpdoc honesto e array<int,mixed>, nao list<int>
+- [4.3] Filament 5: successRedirectUrl(Resource::getUrl('index')) em action de View funciona sob callAction sem quebrar assertNotified
+- [4.3] Filament 5: fillForm com Toggle + campos condicionais por Get rende preview reativo testavel via assertSee
+- [4.4] CreditCardLimitService::futureInstallments = soma pending credit_card_expense em fatura open (lookup ids + whereIn, whereNull deleted_at apos withoutGlobalScopes)
+- [4.4] Saldo previsto de parcela em conta via TransactionBalanceMapper::fromAll + AccountBalanceService::forecast sem Eloquent no service
+- [5.1] Migration Schema::table com foreign() no SQLite preserva dados e indices via rebuild — mesmo padrao das tasks 3.1/4.1, reutilizavel para futuras FKs pendentes (ex.: import_batch_id)
+- [5.1] Helpers Pest sao globais por processo: prefixar por contexto (recurrenceIndexColumns) evita colisao entre arquivos de teste
+- [5.1] unsignedInteger('interval') como nome de coluna passa em pint/phpstan/SQLite sem problema
+- [5.2] Eloquent grava casts date como Y-m-d H:i:s: igualdade em coluna DATE exige whereDate, nao where exato
+- [5.2] Model com cast de data exige app bootado: new Recurrence + getAttribute so funciona em teste Feature, nao Unit puro
+- [5.2] Builder::delete() com SoftDeletes faz soft-delete mesmo with withoutGlobalScopes: limpar tabela exige forceDelete()
+- [5.3] Pest 5 toThrow() aceita mensagem custom de falha no 3o argumento, util para loops de validacao
+- [5.3] whereDate com operador > e obrigatorio para colunas DATE (Eloquent grava com hora; igualdade exata falha)
+- [5.3] array_unique em ids de fatura antes/depois conserva soma de totais em troca de cartao no cascata
+- [5.4] composer dump-autoload obrigatorio apos deletar classe com classmap otimizado (class_exists em arquivo deletado da include-error)
+- [5.4] Filament 5 Section visible com Toggle + preview reativo testavel via fillForm + assertSee (mesmo padrao do Parcelar)
+- [5.5] ProjectedOccurrences::forAccount + AccountBalanceService::forecast(entries, projected) compoe previsto sem dupla contagem (materializada via mapper, futura via projecao)
+- [5.5] whereDate(recurrence_occurrence_date) + whereNull(deleted_at) e o padrao de dedupe com withoutGlobalScopes (soft-delete nao bloqueia)
+- [5.5] Recurrence com cast date exige teste Feature com RefreshDatabase (Unit puro nao boota app); phpstan analisa so app/ + tests/Support
+- [6.1] Enum com mesmo nome do model sombreia relacao: aliasar enum (BudgetPeriod as BudgetPeriodEnum) no model
+- [6.1] Guards 3.13 bloqueiam delete() de categoria/conta em uso: teste de FK nullOnDelete via DB::table()->where('id')->delete() bypassando observer
+- [6.1] Soft-delete nao dispara FK on-delete: aporte mantem transaction_id apos delete() e so anula apos forceDelete()
+- [6.2] notify() grava type com FQCN: dedupe via where type + filtro de data em PHP evita quirks de JSON-query no SQLite
+- [6.2] BudgetAlertJob com QUEUE_CONNECTION=sync executa na hora, permite testar idempotencia com dois dispatches diretos
+- [6.3] Filament 5 Page: action de registro via ->record(fn($arguments)) + mountAction(nome, ['record' => id]) a partir de wire:click na Blade
+- [6.3] Livewire 4: sugestoes como lista de pares budget_id/cents evitam quirks de chaves numericas na hidratacao
+- [6.4] PHPStan treatPhpDocTypesAsCertain: documentar valor de form como int|string|null em vez de ?? null em chave nao-nulavel
+- [6.4] Filament 5 Page com ->fillForm() + default pre-preenche modal de aporte testavel
+- [6.4] CarbonImmutable::parse() sobre getAttribute(date) exige branch DateTimeInterface vs string para phpstan
+- [7.1a] ReportQuery: getAttribute('type') em linha agregada devolve enum do cast (nao string): desembrulhar BackedEnum em helper
+- [7.1a] ReportQuery: substr(coluna,1,7) agrupa YYYY-MM no SQLite mesmo com DATE gravada com hora; filtros de intervalo via whereDate com operador
+- [7.1a] ReportQuery: DB::enableQueryLog()+flushQueryLog() em teste prova nro fixo de queries (sem N+1) ao adicionar categorias/meses
+- [7.1b] ReportQuery: baseReportQuery precisa de colunas qualificadas (transactions.user_id) ao dar JOIN com payees/tags, senao user_id ambigua no SQLite
+- [7.1b] Larastan acusa is_int redundante com @param list<int>: validacao runtime de array exige phpdoc array<int,mixed> + reconstruir list<int> apos validar
+- [7.1b] ReportQuery: JOIN com tags/payees + user_id do dono na mesma agregacao resolve nome + isolamento em 1 query sem lookup separado
+- [7.1c] ReportQuery projecao 90d: ProjectedOccurrences::forAccount por conta + forecast por dia; transfer exige lista projetada por conta (uniao global duplicaria)
+- [7.1c] ReportQuery fixa x variavel: SUM(CASE WHEN recurrence_id IS NOT NULL) particiona em 1 query; splits herdam flag via JOIN transactions
+- [7.1c] ReportQuery 11-13 sem N+1: nro fixo de queries por conta/regra provado via query log com volume extra
+- [7.2a] Filament 5 Resource::getUrl com painel via argumento nomeado (getUrl(name, params, isAbsolute, panel))
+- [7.2a] Filtros de tabela Filament vao na URL como tableFilters[{filtro}][value]=id, servem de drill-down real para ListTransactions
+- [7.2a] Chaves string numericas viram int no PHP e phpstan acusa array<string,string>: usar lista de pares list<array{id,rotulo}>
+- [7.2b] Livewire 4: prop publica nova precisa existir na Page antes de ->set() no teste, senao Public property not found
+- [7.2b] Filament 5 relatorios 8-13: colunas dinamicas (anos/meses) derivadas em Blade de array_keys da primeira linha, sem query extra
+- [7.2c] Livewire 4 converte StreamedResponse retornado de acao em efeito download (base64); teste usa ->call('metodo')->assertFileDownloaded(nome, contentType)
+- [7.2c] league/csv com delimitador ; + BOM UTF-8: teste de CSV deve reler com Reader::createFromString()->setDelimiter(';') pois fputcsv poe aspas em campos com espaco
+- [7.2c] Pdf::loadHTML(html)->setPaper('a4')->output() (facade Barryvdh DomPDF Pdf) gera %PDF sem publicar config; template precisa de meta charset + fonte DejaVu para acentos
+- [7.3] Filament 5 Dashboard customizada estende Filament Pages Dashboard com getWidgets() vazio + content Schema retornando View Blade mantem rota /app
+- [7.3] DashboardLayout persiste ordem/visibilidade em user_settings.dashboard_widgets como lista {id,visible} com leitura de formatos legados
+- [7.4] Filament 5: sino do topo via ->databaseNotifications() no Panel; prefs via action com form + fillForm na Page Settings
+- [7.4] Carbon 3 diffInDays() retorna float: cast (int) obrigatorio com strict_types
+- [7.4] MailMessage::render() devolve HtmlString: teste precisa de (string) antes de toContain
+- [7.5] Dashboard projecao 90d via Reports::getUrl(panel:'app').'?relatorio=12' (mesmo padrao tableFilters da Page Reports)
+- [7.5] assertDontSee em widget com toggle precisa de string exclusiva da secao visivel (ocultos repetem 'Exibir: rotulo')
+- [8.1] foreignId()->constrained() sem indice automatico: index explicito em toda FK incl. tabelas filhas (rule_id, import_batch_id+status)
+- [8.1] Guard bloqueia delete() de conta/cartao com vinculo: teste de nullOnDelete em target_* exige DB::table()->delete() bypass
+- [8.2a] CsvParser: delimitador por scoring quote-aware nas 5 primeiras linhas com preferencia ; em empate; league/csv getRecords preserva chaves e devolve string|null
+- [8.2a] Deduplicator: external_id sha256 de data|centavos|descricao normalizada|dono (account:id/card:id); soft-deleted continua bloqueando reimportacao
+- [8.2b] OfxParser: regex /<TAG\b[^>]*>([^<]*)/i parseia SGML 1.x sem fechamento e XML 2.x com mesmo codigo
+- [8.2b] OfxParser: Money::parse aceita TRNAMT com ponto e virgula BR preservando sinal sem float
+- [8.2b] OfxParser: Transaction factory aceita amount_cents negativo (positividade vive no service, nao no model)
+- [8.3] Filament 5 Page com FileUpload em action: dado pode vir string ou array de 1 posicao, normalizar antes de ler disco local
+- [8.3] ImportMapper::mapRow ignora chaves extras do mapping (preset), mapping salvo reusavel direto como override
+- [8.3] PHPStan acusa isset+!==null always-true em array<string,mixed>: usar ?? null + comparacao direta
+- [8.4a] RuleEngine com global scope usa withoutGlobalScopes()+checagem manual de user_id para fila/console
+- [8.4a] syncWithoutDetaching() em taggables anexa tag de regra sem remover existentes
+- [8.4b] Filament assertNotified compara titulo com === exato, nao parcial
+- [8.4b] RuleRetroApplier dry-run via snapshot+engine+rollback reaproveita RuleEngine sem duplicar logica de match
+- [8.4b] Repeater em action de Page testa via callAction com arrays aninhados; validacao manual no handler sem minItems
+- [8.5] Eloquent Builder::delete() com withoutGlobalScopes() ainda faz soft-delete: hard delete em teste exige forceDelete() ou DB::table
+- [8.5] Larastan resolve Builder::get() como Collection<int,Model> perdendo TModel: declarar isso e estreitar com @var no call site
+- [8.5] Pint cobra ! colado e fully_qualified_strict_types nos testes
+- [8.6] throttle:api sem RateLimiter::for('api') estoura MissingRateLimiterException (provider custom sem default do skeleton)
+- [8.6] Gate com closure sem parametro nega guest no Laravel 13: usar fn (?User $user): bool
+- [8.6] Sanctum Guard reusado entre requests no mesmo teste: Auth::forgetGuards() apos revogar para simular request nova
+- [9.1] AccountCachedBalance::get cache do dia-SP com recalcula via SQL respeitando semantica 3.1; invalidacao via TransactionObserver em created/updated/deleted/forceDeleted/restored
+- [9.1] sum(DB::raw()) envolve em outro sum: expressao deve ser por linha sem agregado interno (misuse of aggregate no SQLite)
+- [9.1] EXPLAIN QUERY PLAN aceita bindings via DB::select('EXPLAIN QUERY PLAN '.sql,, $)bindings e reflete uso de indice mesmo em dataset pequeno
+- [9.2] Filament 5 ja traz skip-link Pular para o conteudo -> #fi-main-content, lang via locale e viewport: testar baseline em vez de reinventar
+- [9.2] Filament 5 tabelas: visibleFrom('md') esconde coluna no mobile; stackedOnMobile() empilha linhas em cartoes
+- [9.2] Table::make() exige HasTable: asserts de coluna responsiva via GET + assertSee na classe CSS renderizada
+- [9.4] Filament 5: assertActionVisible/assertActionHidden testam actions com ->visible(); assertActionExists ignora visibilidade
+- [9.4] PHPStan infere Account->type magico como string: comparar via getAttribute('type') === Enum evita identical.alwaysFalse
+- [9.4] Aporte/resgate investment reusam TransferService/CreateTransaction sem codigo novo de dominio
+- [9.5] ReportQuery fixa x variavel: COALESCE(cat.is_fixed,0)=1 no CASE WHEN particiona em 1 query tratando categoria nula como variavel; granularidade por split (mae com recurrence fixa todos os splits)
+- [9.6] Filament 5 Page::shouldRegisterNavigation(): bool permite item de menu contextual por usuario (onboarding some apos 1a conta)
+- [9.6] DemoSeeder idempotente via firstOrCreate por user_id+nome + early-return se ja ha transacoes; roda via db:seed --class=DemoSeeder
+- [9.7] Filament 5 deriva slugs de Resource/Page sem $slug explicito: route:list --path=app e a fonte de URLs para docs
+- [9.7] Scheduler do projeto vive em bootstrap/app.php (4 comandos daily), nao em routes/console.php nem Kernel
+- [9.F1] Filament 5 publica assets vendor via filament:assets — public/js fonts css/filament/filament sao gerados, nunca commitados; regenerar no Dockerfile/entrypoint
+- [9.F1] Avatar padrao Filament 5 usa ui-avatars.com (CDN externo); provider local com data-URI sem xmlns resolve sem request de rede
+- [9.F2] CHANGELOG sem datas cumpre 'sem datas inventadas'; cronologia vive nos reports de fase e no git log

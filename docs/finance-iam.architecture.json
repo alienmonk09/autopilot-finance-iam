@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "finance-iam · arquitetura final",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1120,
+      640
+    ],
+    "repository": {
+      "url": "https://github.com/alienmonk09/finance-iam",
+      "revision": "bb14e9d393da66f4598157c3c8df44c1ae19d7ce"
+    },
+    "views": [
+      {
+        "id": "request",
+        "label": "Caminho do request",
+        "focus": [
+          "user",
+          "edge",
+          "api",
+          "filament",
+          "domain",
+          "models",
+          "sqlite"
+        ],
+        "note": "Um clique no painel atravessa Filament, o domínio e os models até o SQLite; a API v1 entra pelo mesmo FrankenPHP com token Sanctum."
+      },
+      {
+        "id": "background",
+        "label": "Trabalho em segundo plano",
+        "focus": [
+          "scheduler",
+          "queue",
+          "notify",
+          "sqlite"
+        ],
+        "note": "Fechamento de fatura, recorrências e alertas rodam sem request, dentro do mesmo container."
+      },
+      {
+        "id": "import",
+        "label": "Importação e regras",
+        "focus": [
+          "imports",
+          "rules",
+          "backup",
+          "domain",
+          "models",
+          "sqlite"
+        ],
+        "note": "Extratos CSV/OFX passam por staging e dedup; regras rodam na criação e retroativamente; backup exporta JSON e o próprio arquivo SQLite."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Usuário",
+      "sublabel": "navegador",
+      "pos": [
+        38,
+        250
+      ],
+      "size": [
+        138,
+        68
+      ]
+    },
+    {
+      "id": "edge",
+      "type": "backend",
+      "label": "FrankenPHP",
+      "sublabel": "Caddy :8000 · PHP 8.4",
+      "pos": [
+        220,
+        250
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "Dockerfile",
+          "label": "Dockerfile"
+        },
+        {
+          "path": "docker/supervisord.conf",
+          "label": "supervisord"
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Fortify",
+      "sublabel": "login · 2FA TOTP",
+      "pos": [
+        402,
+        80
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "config/fortify.php",
+          "label": "Fortify"
+        }
+      ]
+    },
+    {
+      "id": "filament",
+      "type": "frontend",
+      "label": "Filament 5",
+      "sublabel": "Livewire 4 · /app",
+      "pos": [
+        402,
+        250
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Providers/Filament/AppPanelProvider.php",
+          "label": "painel"
+        }
+      ]
+    },
+    {
+      "id": "domain",
+      "type": "backend",
+      "label": "app/Domain",
+      "sublabel": "19 contextos",
+      "pos": [
+        584,
+        250
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Domain/Cards/InvoiceAllocator.php",
+          "label": "Domain"
+        }
+      ]
+    },
+    {
+      "id": "models",
+      "type": "backend",
+      "label": "Eloquent",
+      "sublabel": "23 models · user_id",
+      "pos": [
+        766,
+        250
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Models/Transaction.php",
+          "label": "model"
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite",
+      "sublabel": "WAL · fila · cache",
+      "pos": [
+        948,
+        250
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "config/database.php",
+          "label": "config"
+        }
+      ]
+    },
+    {
+      "id": "scheduler",
+      "type": "backend",
+      "label": "schedule:work",
+      "sublabel": "4 commands diários",
+      "pos": [
+        584,
+        420
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Console/Commands/CloseInvoicesCommand.php",
+          "label": "command"
+        },
+        {
+          "path": "routes/console.php",
+          "label": "schedule"
+        }
+      ]
+    },
+    {
+      "id": "queue",
+      "type": "messagebus",
+      "label": "queue:work",
+      "sublabel": "driver database",
+      "pos": [
+        766,
+        420
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Jobs/SendNotificationsJob.php",
+          "label": "job"
+        }
+      ]
+    },
+    {
+      "id": "notify",
+      "type": "external",
+      "label": "Notificações",
+      "sublabel": "mail + database",
+      "pos": [
+        948,
+        420
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Notifications/InvoiceDueNotification.php",
+          "label": "notification"
+        }
+      ]
+    },
+    {
+      "id": "imports",
+      "type": "backend",
+      "label": "Importação",
+      "sublabel": "CSV · OFX · dedup",
+      "pos": [
+        584,
+        80
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Domain/Imports/OfxParser.php",
+          "label": "OfxParser"
+        },
+        {
+          "path": "app/Domain/Imports/Deduplicator.php",
+          "label": "Deduplicator"
+        },
+        {
+          "path": "app/Filament/App/Pages/Import.php",
+          "label": "wizard"
+        }
+      ]
+    },
+    {
+      "id": "rules",
+      "type": "backend",
+      "label": "RuleEngine",
+      "sublabel": "condições e ações",
+      "pos": [
+        766,
+        80
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Domain/Rules/RuleEngine.php",
+          "label": "RuleEngine"
+        },
+        {
+          "path": "app/Domain/Rules/RuleRetroApplier.php",
+          "label": "retroativo"
+        }
+      ]
+    },
+    {
+      "id": "backup",
+      "type": "backend",
+      "label": "Backup / Export",
+      "sublabel": "CSV · JSON · .sqlite",
+      "pos": [
+        948,
+        80
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/Domain/Exports/BackupService.php",
+          "label": "BackupService"
+        },
+        {
+          "path": "app/Filament/App/Pages/Backup.php",
+          "label": "página"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API v1",
+      "sublabel": "Sanctum · OpenAPI",
+      "pos": [
+        220,
+        80
+      ],
+      "size": [
+        138,
+        68
+      ],
+      "sources": [
+        {
+          "path": "routes/api.php",
+          "label": "rotas"
+        },
+        {
+          "path": "app/Http/Controllers/Api/V1/AccountController.php",
+          "label": "controller"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-edge",
+      "from": "user",
+      "to": "edge",
+      "label": "HTTPS",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "edge-filament",
+      "from": "edge",
+      "to": "filament",
+      "label": "worker PHP",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "auth-filament",
+      "from": "auth",
+      "to": "filament",
+      "label": "sessão autenticada",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        471,
+        162
+      ]
+    },
+    {
+      "id": "filament-domain",
+      "from": "filament",
+      "to": "domain",
+      "label": "Actions",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "domain-models",
+      "from": "domain",
+      "to": "models",
+      "label": "Eloquent",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "models-sqlite",
+      "from": "models",
+      "to": "sqlite",
+      "label": "SQL, DB::transaction",
+      "variant": "emphasis",
+      "labelDy": -28
+    },
+    {
+      "id": "scheduler-domain",
+      "from": "scheduler",
+      "to": "domain",
+      "label": "invoices:close, recurrences",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "scheduler-queue",
+      "from": "scheduler",
+      "to": "queue",
+      "label": "dispatch",
+      "labelDy": -28
+    },
+    {
+      "id": "queue-notify",
+      "from": "queue",
+      "to": "notify",
+      "label": "envia",
+      "labelDy": -28
+    },
+    {
+      "id": "queue-sqlite",
+      "from": "queue",
+      "to": "sqlite",
+      "label": "tabela jobs",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "imports-domain",
+      "from": "imports",
+      "to": "domain",
+      "label": "staging → confirma",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        653,
+        162
+      ]
+    },
+    {
+      "id": "imports-rules",
+      "from": "imports",
+      "to": "rules",
+      "label": "aplica regras",
+      "labelDy": -28
+    },
+    {
+      "id": "rules-models",
+      "from": "rules",
+      "to": "models",
+      "label": "hook ao criar",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        835,
+        162
+      ]
+    },
+    {
+      "id": "backup-sqlite",
+      "from": "backup",
+      "to": "sqlite",
+      "label": "dump / restore",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        1017,
+        162
+      ]
+    },
+    {
+      "id": "edge-api",
+      "from": "edge",
+      "to": "api",
+      "label": "/api/v1 · Bearer",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [
+        289,
+        162
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Regras que valem em todo lugar",
+      "items": [
+        "Dinheiro em centavos (int), nunca float",
+        "Reimportar não duplica: hash por external_id",
+        "Todo model tem scope global por user_id"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Um container, três processos",
+      "items": [
+        "supervisord: frankenphp, queue:work, schedule:work",
+        "SQLite serve banco, fila, cache e sessão",
+        "Onboarding, DemoSeeder e backup fecham o ciclo de uso"
+      ]
+    }
+  ]
+}
