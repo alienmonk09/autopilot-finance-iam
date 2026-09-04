@@ -18,7 +18,7 @@ Você não precisa reproduzir tudo para aproveitar. Escolha uma trilha:
 |---|---|---|---|
 | **Só entender** | Ler a [página da história](https://alienmonk09.github.io/autopilot-finance-iam/) e as seções 1, 6 e 7 deste README | 30 min | Nada. Nem terminal. |
 | **Ver por dentro** | A trilha anterior + abrir `exemplo/AGENTS.md`, `exemplo/docs/ROADMAP.md` e um review em `exemplo/docs/reports/` e comparar com o que a história conta | 1 h | Saber ler markdown |
-| **Experimentar pequeno** | Seções 2 a 4, mas com um projeto de brinquedo de 5 a 8 tasks (veja "Comece pequeno" na seção 4) | uma tarde | Terminal, git, uma conta no GitHub |
+| **Experimentar pequeno** | Seções 2 a 4, mas com um projeto de brinquedo de 5 a 8 tasks (veja "Comece pequeno" na seção 4) | uma tarde | Terminal Linux (no Windows, WSL2: seção 2), git, uma conta no GitHub |
 | **Reproduzir** | Tudo, com um app de verdade | um fim de semana | O acima + a stack do seu app |
 
 Se você nunca usou terminal nem git, faça a trilha "só entender" agora e volte depois. Para aprender git, o livro oficial é gratuito e tem tradução: https://git-scm.com/book/pt-br/v2 (os capítulos 1 e 2 bastam para este guia).
@@ -81,12 +81,45 @@ Números do caso real:
 
 ## 2. O que você precisa
 
-- **Um Mac ou Linux** com terminal. No Windows, use o WSL2 (um Linux dentro do Windows). No Mac, deixe na tomada: notebook na bateria dorme e derruba a conexão (aconteceu 3 vezes).
+- **Um terminal Linux.** Mac e Linux já têm. No Windows, instale o WSL2 (um Ubuntu dentro do Windows; passo a passo logo abaixo). Em qualquer sistema, deixe o notebook na tomada e configure para não dormir: na bateria ele dorme, derruba a conexão e o loop perde a task (aconteceu 3 vezes).
 - **Git** e uma conta no GitHub. O loop faz push a cada task; se a máquina morrer, o trabalho está lá.
 - **[opencode](https://opencode.ai)** ≥ 1.18, a ferramenta que roda os agentes no terminal: `curl -fsSL https://opencode.ai/install | bash`. Depois `opencode auth login` e escolha o provider `opencode` (tem modelos gratuitos; o usado aqui foi `opencode/muse-spark-1.3-contributor-free`).
 - **Opcional, para não parar no rate limit:** o mesmo modelo pago no OpenCode Go (`opencode auth login --provider opencode-go`; US$0,10 por milhão de tokens de entrada). O loop alterna sozinho.
 - **Um modelo forte para escrever a spec** (aqui foi o Claude). É a única parte onde vale gastar com o modelo caro. O plano gratuito de qualquer chat serve para começar.
 - **A stack do seu app.** Aqui: PHP 8.4, Composer, Node 20, e Docker para rodar no fim. O esqueleto não sabe nada de Laravel; o que muda de stack para stack é só o `check.sh`.
+
+### Se você usa Windows: instale o WSL2 primeiro
+
+O loop é bash + perl e o opencode roda melhor em Linux. O WSL2 (Windows Subsystem for Linux) instala um Ubuntu de verdade dentro do Windows, sem máquina virtual manual e sem dual boot. Leva 15 minutos e uma reinicialização. Precisa de Windows 10 versão 2004 ou mais novo, ou Windows 11.
+
+1. Abra o **PowerShell como administrador** (botão direito no menu Iniciar → "Terminal (Admin)" ou "Windows PowerShell (Admin)") e rode:
+
+   ```powershell
+   wsl --install
+   ```
+
+   Isso ativa o WSL, baixa o Ubuntu e pede para reiniciar. Reinicie.
+
+2. Depois de reiniciar, uma janela do Ubuntu abre sozinha e pede **usuário e senha**. Escolha um usuário simples, sem espaço (ex.: `ana`). A senha não aparece enquanto você digita; é normal. Se a janela não abrir, procure "Ubuntu" no menu Iniciar.
+
+3. Dentro do Ubuntu, atualize e instale o básico:
+
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install -y git curl build-essential
+   git config --global user.name "Seu Nome"
+   git config --global user.email "seu@email.com"
+   ```
+
+4. **Trabalhe dentro do Linux, não na pasta do Windows.** Crie os projetos em `~/dev` (que fica em `/home/<usuário>/dev`), não em `/mnt/c/Users/...`. Na pasta do Windows, git e testes ficam 5 a 10 vezes mais lentos. Para abrir essa pasta no Explorer do Windows, digite `explorer.exe .` dentro do Ubuntu.
+
+5. **Editor:** instale o [VS Code](https://code.visualstudio.com) no Windows com a extensão **WSL**. Dentro do Ubuntu, `code .` abre a pasta atual no VS Code, editando os arquivos do Linux direto.
+
+6. **Docker** (só para o passo 7, rodar o app no fim): instale o [Docker Desktop](https://www.docker.com/products/docker-desktop/) no Windows e, em *Settings → Resources → WSL integration*, ligue o Ubuntu. O comando `docker` passa a funcionar dentro do WSL.
+
+7. **Não deixe o Windows dormir** enquanto o loop roda: *Configurações → Sistema → Energia (e bateria) → Tempo limite de tela e suspensão* → "Quando conectado, colocar em suspensão após": **Nunca**. Notebook na tomada. O `caffeinate` do passo 6 é só Mac; no WSL rode `scripts/autopilot.sh` direto.
+
+Daqui em diante, tudo que o guia manda digitar é dentro da janela do Ubuntu.
 
 ---
 
@@ -225,7 +258,7 @@ Na fase 0, o skeleton do framework costuma trazer o próprio `AGENTS.md` e `.git
 ### Passo 6 — Solte o loop
 
 ```bash
-caffeinate -dis scripts/autopilot.sh      # Mac: -dis segura o sistema acordado (só na tomada). Linux: só scripts/autopilot.sh
+caffeinate -dis scripts/autopilot.sh      # Mac: -dis segura o sistema acordado (só na tomada). Linux e WSL2: só scripts/autopilot.sh
 tail -f logs/autopilot.log                # em outro terminal, acompanha o log ao vivo
 scripts/status.sh                         # placar a qualquer hora
 ```
@@ -333,7 +366,7 @@ A lição que vale para qualquer projeto, com ou sem IA: **o que não é verific
 
 **Posso usar outro modelo gratuito?** Sim, troque `model:` nos três agentes (ou `FREE_MODEL` no autopilot). A cota dos modelos gratuitos do provider `opencode` é por conta, não por modelo: quando um cai, os outros caem junto.
 
-**Posso rodar no Windows?** O loop é bash + perl; use WSL2.
+**Posso rodar no Windows?** Sim, pelo WSL2. Passo a passo na seção 2. Não tente rodar no PowerShell nem no Git Bash: o loop é bash + perl e depende de comportamento de processo do Linux.
 
 **E se eu quiser mudar a spec no meio?** Edite `docs/SPEC.md`/`ROADMAP.md` e commite. A próxima iteração lê o novo estado. Para uma dica pontual sem mudar a spec, `docs/HINTS.md`.
 
