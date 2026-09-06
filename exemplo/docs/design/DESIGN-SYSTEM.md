@@ -84,3 +84,9 @@ Classes reutilizáveis compiladas em `theme.css` e `app.css`:
 4. `money`: Força `tabular-nums` e tracking `-0.01em` para alinhamento tabular perfeito de moedas formatadas pelo `Money::format()`.
 5. `card-title`: Título semibold 14px com cores contrastadas em claro e escuro.
 6. `reveal`: Animação de entrada suave com fade + `translateY(6px → 0)` em `--dur-slow`, respeitando `--i` para escalonamento (stagger).
+
+---
+
+## 7. Tabelas responsivas e form de lançamento (2026-09-06)
+
+Regras da rodada de UX (5 colunas por tabela, cartão mobile por `fi-ta-cell-<coluna>`, container queries nas tabelas em Blade, essencial-primeiro no form) estão em `UX-2026-09-06.md`, ao lado deste arquivo.

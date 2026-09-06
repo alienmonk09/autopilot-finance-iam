@@ -26,7 +26,7 @@ Referências analisadas (funcionalidades a espelhar, sem copiar código):
 | Framework | **Laravel 13** (última versão estável) | `laravel new`, estrutura padrão do 13 |
 | Banco | **SQLite** (único banco, arquivo `database/database.sqlite`) | Ativar `PRAGMA journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000` via config. Sem Postgres/MySQL. Todos os testes rodam em SQLite `:memory:` |
 | UI | **Filament 5** (painel de usuário, não painel admin) + **Livewire 4** + Tailwind 4 | Usar Filament como framework de aplicação: Resources, Pages, Widgets (Chart.js), Notifications, Actions. Customizar tema, cores e layout para não parecer "admin genérico". Componentes customizados em Livewire quando o Filament não cobrir |
-| Auth | Laravel Fortify (ou auth do Filament) + 2FA TOTP opcional | Registro, login, reset de senha, 2FA, sessões |
+| Auth | Laravel Fortify (ou auth do Filament) + 2FA TOTP opcional | Registro (auto-registro configurável por `FORTIFY_REGISTRATION`, padrão ligado; produção pessoal roda fechado), login, reset de senha, 2FA, sessões |
 | Filas / agendamento | Queue `database`, Scheduler do Laravel | Jobs para geração de recorrências, faturas, notificações, importação |
 | Testes | **Pest 3+** | Feature tests por módulo, testes de unidade nos serviços de domínio. Cobertura mínima aceitável: todas as regras de negócio da seção 3 |
 | Qualidade | Laravel Pint, Larastan nível 6+, Rector (opcional) | CI local via `composer check` |
@@ -172,6 +172,8 @@ Todas as tabelas têm `id` (ulid ou bigint autoincrement — escolha uma e mante
 
 Layout com sidebar: Dashboard · Transações · Contas · Cartões · Recorrências · Parcelamentos · Orçamentos · Metas · Relatórios · Importar · Regras · Categorias · Configurações. Dark mode. Responsivo (mobile funcional: lançar transação em ≤ 3 toques do dashboard via botão flutuante "+").
 
+Regras gerais de tabela e cabeçalho (rodada de UX de 2026-09-06): **nenhuma tela rola na horizontal** em 390, 1150 ou 1440 px. Tabela tem no máximo 5 colunas; informação secundária vai na segunda linha da coluna a que pertence; status é ícone com tooltip; ações de linha ficam num menu; no celular cada linha é um cartão de até 3 linhas (título, valor, meta), nunca uma pilha de blocos rotulados. Cabeçalho de página tem uma ação primária e as demais em cinza; navegação de mês em botões de ícone.
+
 ### 4.1 Dashboard
 Widgets reordenáveis (config do usuário):
 - Saldo total (contas ativas, `include_in_dashboard`) + variação vs mês anterior
@@ -189,7 +191,7 @@ Widgets reordenáveis (config do usuário):
 ### 4.2 Transações
 - Tabela unificada com filtros: período (presets: hoje, semana, mês, mês anterior, ano, custom), conta, cartão, categoria, tag, payee, tipo, status, valor (faixa), texto; ordenação; totais do filtro no rodapé (receita, despesa, resultado); agrupamento opcional por dia
 - Ações em massa: categorizar, adicionar tag, marcar cleared, excluir, mover de conta
-- Form de criação/edição com abas por tipo (Despesa · Receita · Transferência · Cartão) — campos condicionais; toggle "Repetir" (abre config de recorrência) e "Parcelar" (número de parcelas, preview das datas/faturas); autocomplete de payee com sugestão de categoria; upload de anexo (comprovante); split
+- Form de criação/edição com abas por tipo (Despesa · Receita · Transferência · Cartão) — campos condicionais, na ordem valor (campo grande, foco inicial, teclado decimal) → data → descrição → conta/cartão → categoria → favorecido → status; competência, etiquetas, divisão, observações e anexos ficam numa seção "Mais detalhes" recolhida, e Parcelar/Repetir em seções recolhidas até o toggle ligar; o modal "Lançamento rápido" usa o mesmo form e cabe numa tela de 900 px sem rolar; toggle "Repetir" (abre config de recorrência) e "Parcelar" (número de parcelas, preview das datas/faturas); autocomplete de payee com sugestão de categoria; upload de anexo (comprovante); split
 - Detalhe: histórico de auditoria, anexos, parcelas irmãs, ocorrências irmãs
 - Navegação por mês (‹ Setembro 2026 ›) padrão dos apps BR
 
